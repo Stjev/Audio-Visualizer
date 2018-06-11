@@ -7,6 +7,9 @@ import audiovisualizer.MVC.models.SongModel;
 import be.tarsos.dsp.*;
 import be.tarsos.dsp.io.jvm.AudioDispatcherFactory;
 import be.tarsos.dsp.io.jvm.AudioPlayer;
+import be.tarsos.dsp.pitch.PitchDetectionHandler;
+import be.tarsos.dsp.pitch.PitchDetectionResult;
+import be.tarsos.dsp.pitch.PitchProcessor;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -19,7 +22,7 @@ import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
 
-public class SongPlayer implements InvalidationListener {
+public class SongPlayer implements InvalidationListener, PitchDetectionHandler {
     private File song;
 
     private SimpleBooleanProperty playing;
@@ -50,15 +53,12 @@ public class SongPlayer implements InvalidationListener {
         }
     }
 
-    private AudioFileFormat fileFormat;
     private AudioFormat format;
     private GainProcessor gainProcessor;
     private AudioPlayer audioPlayer;
     private AudioDispatcher dispatcher;
     private WaveformSimilarityBasedOverlapAdd wsola;
 
-    private double durationInSeconds;
-    private double currentTime;
     private double pauzedAt;
 
     private void playSong() {
@@ -84,9 +84,7 @@ public class SongPlayer implements InvalidationListener {
             throw new Error(e);
         }
         format = fileFormat.getFormat();
-        durationInSeconds = fileFormat.getFrameLength() / format.getFrameRate();
         pauzedAt = 0;
-        currentTime = 0;
     }
 
     private void play(){
@@ -99,9 +97,8 @@ public class SongPlayer implements InvalidationListener {
 
     private void play(double startTime) throws LineUnavailableException, IOException, UnsupportedAudioFileException {
         gainProcessor = new GainProcessor(1.0);
-        audioPlayer = new AudioPlayer(format);
 
-        wsola = new WaveformSimilarityBasedOverlapAdd(WaveformSimilarityBasedOverlapAdd.Parameters.slowdownDefaults(1.0, 500));
+        wsola = new WaveformSimilarityBasedOverlapAdd(WaveformSimilarityBasedOverlapAdd.Parameters.slowdownDefaults(1.0, format.getSampleRate()));
 
         dispatcher = AudioDispatcherFactory.fromFile(song, wsola.getInputBufferSize(), wsola.getOverlap());
 
@@ -110,9 +107,18 @@ public class SongPlayer implements InvalidationListener {
 
         dispatcher.addAudioProcessor(wsola);
         dispatcher.addAudioProcessor(gainProcessor);
-        dispatcher.addAudioProcessor(audioPlayer);
+        dispatcher.addAudioProcessor(new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.YIN, format.getSampleRate(), 1024, this));
 
-        Thread t = new Thread(dispatcher,"Audio Player Thread");
-        t.start();
+        new Thread(dispatcher,"Audio Player Thread").start();
+        Media sound = new Media(new File("C:\\Users\\Stef Desktop\\Music\\ADD feat. Emilia Ali (Cudos Remix).mp3").toURI().toString());
+        MediaPlayer mediaPlayer = new MediaPlayer(sound);
+        mediaPlayer.play();
+    }
+
+    @Override
+    public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
+        if(pitchDetectionResult.getPitch() != -1){
+            freqModel.setValue(pitchDetectionResult.getPitch() - 23000);
+        }
     }
 }
