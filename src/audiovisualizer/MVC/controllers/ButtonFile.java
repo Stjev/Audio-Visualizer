@@ -30,9 +30,8 @@ public class ButtonFile extends Button implements EventHandler<MouseEvent> {
     public void handle(MouseEvent event) {
         FileChooser chooser = new FileChooser();
         // Only able to select .mp3 & .wav files
-        FileChooser.ExtensionFilter filter =
-                new FileChooser.ExtensionFilter("mp3 audio files (*.mp3)", "*.mp3");
-        chooser.getExtensionFilters().add(filter);
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("mp3 audio files (*.mp3)", "*.mp3"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("wav audio files (*.wav)", "*.wav"));
         chooser.titleProperty().setValue("Search a song");
         // Open a window to search for a song
         File song = chooser.showOpenDialog(this.getContextMenu());

@@ -6,7 +6,7 @@ package audiovisualizer;
 import audiovisualizer.MVC.controllers.ButtonFile;
 import audiovisualizer.MVC.controllers.ButtonPlay;
 import audiovisualizer.MVC.models.SongModel;
-import audiovisualizer.MVC.views.AudioPlayer;
+import audiovisualizer.MVC.views.SongPlayer;
 import audiovisualizer.MVC.views.SongLabel;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -26,8 +26,8 @@ public class AVCompanion {
     private SongModel songModel;
     private SimpleDoubleProperty freqModel;
 
-    // AudioPlayer
-    private AudioPlayer player;
+    // SongPlayer
+    private SongPlayer player;
 
     public void initialize(){
         // Initialize the models
@@ -36,7 +36,7 @@ public class AVCompanion {
         songModel = new SongModel();
 
         // Initialize an audioplayer
-        player = new AudioPlayer();
+        player = new SongPlayer();
         player.setPlaying(playing);
         player.setSongModel(songModel);
         player.setFreqModel(freqModel);
