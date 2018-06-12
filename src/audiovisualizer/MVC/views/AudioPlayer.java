@@ -16,10 +16,15 @@ import javafx.scene.shape.Rectangle;
 
 import java.io.File;
 
-public class SongPlayer implements InvalidationListener {
+public class AudioPlayer implements InvalidationListener {
 
-    private final static int BANDS = 128;
+    //TODO: Slow down rectangle movement
+    //TODO: Frequency works exponentially, inverse this effect
+
+    private final static int BANDS = 512;
     private final static double REFRESH_RATE = 1000; //FPS
+    private final static int FREQUENCY_CAP = 18000;
+    private final static int CAP = (FREQUENCY_CAP * BANDS) / 20000;
     private File song;
 
     private SimpleBooleanProperty playing;
@@ -79,8 +84,8 @@ public class SongPlayer implements InvalidationListener {
                                   float[] magnitudes,
                                   float[] phases) {
 
-        for(int i = 0; i < BANDS; i += 1) {
-            rectangles[i].yProperty().setValue(Math.abs(magnitudes[i]) * 10);
+        for(int i = 0; i < CAP; i += 1) {
+            rectangles[i].yProperty().setValue(Math.max(0, 600 - Math.abs(60 + magnitudes[i]) * 13));
         }
     }
 
@@ -118,15 +123,17 @@ public class SongPlayer implements InvalidationListener {
         this.songModel.addListener(this);
     }
 
+    Rectangle temp;
+
     /**
      * Set the pane and generate rectangles
      */
     public void drawOnPane(Pane pane) {
-        for(int i = 0; i < BANDS; i += 1) {
-            rectangles[i] = new Rectangle(i*((pane.getPrefWidth() / BANDS + 0.3)), pane.getPrefHeight(),
-                    (pane.getPrefWidth() / BANDS) - 0.3, pane.getPrefHeight());
+        for(int i = 0; i < CAP; i += 1) {
+            rectangles[i] = new Rectangle(i*((pane.getPrefWidth() / CAP)), pane.getPrefHeight(),
+                    (pane.getPrefWidth() / CAP) - 0.1, pane.getPrefHeight());
 
-            rectangles[i].setFill(Color.rgb(((i * 255) / BANDS - 255) * -1, 0, 255));
+            rectangles[i].setFill(Color.rgb(((i * 255) / CAP - 255) * -1, 0, 255));
 
             pane.getChildren().add(rectangles[i]);
         }

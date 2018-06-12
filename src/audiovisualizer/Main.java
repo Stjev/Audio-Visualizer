@@ -13,9 +13,9 @@ public class Main extends Application {
         Parent root = FXMLLoader.load(getClass().getResource("audiovisualizer.fxml"));
         primaryStage.setTitle("Audio visualizer");
         primaryStage.setScene(new Scene(root));
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
-
 
     public static void main(String[] args) {
         launch(args);

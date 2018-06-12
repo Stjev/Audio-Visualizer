@@ -35,6 +35,6 @@
                <Insets left="10.0" />
            </padding>
        </HBox>
-       <Pane fx:id="pane" prefHeight="600.0" prefWidth="1280" style="-fx-background-color: #3a3a3a;" />
+       <Pane fx:id="pane" prefHeight="600.0" prefWidth="1280" VBox.vgrow="ALWAYS" style="-fx-background-color: #3a3a3a;" />
    </children>
 </VBox>
