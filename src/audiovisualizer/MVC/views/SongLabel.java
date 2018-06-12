@@ -16,6 +16,7 @@ public class SongLabel extends Label implements InvalidationListener{
 
     public void setModel(SongModel model) {
         this.model = model;
+        setStyle("-fx-text-fill: #ffffff");
         model.addListener(this);
     }
 

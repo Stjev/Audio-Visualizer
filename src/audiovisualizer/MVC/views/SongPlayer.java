@@ -7,11 +7,11 @@ import audiovisualizer.MVC.models.SongModel;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.control.Alert;
 import javafx.scene.layout.Pane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 import java.io.File;
@@ -19,15 +19,14 @@ import java.io.File;
 public class SongPlayer implements InvalidationListener {
 
     private final static int BANDS = 128;
+    private final static double REFRESH_RATE = 1000; //FPS
     private File song;
 
     private SimpleBooleanProperty playing;
     private SongModel songModel;
-    private SimpleDoubleProperty freqModel;
 
     private MediaPlayer player;
     private Boolean songLoaded = false;
-    private Pane pane;
     private Rectangle[] rectangles = new Rectangle[BANDS];
 
     /**
@@ -59,7 +58,7 @@ public class SongPlayer implements InvalidationListener {
 
             songLoaded = true;
 
-            player.setAudioSpectrumInterval(0.001);
+            player.setAudioSpectrumInterval(1.0 / REFRESH_RATE);
             player.setAudioSpectrumNumBands(BANDS);
             player.setAudioSpectrumListener(this::spectrumListener);
         }
@@ -81,20 +80,8 @@ public class SongPlayer implements InvalidationListener {
                                   float[] phases) {
 
         for(int i = 0; i < BANDS; i += 1) {
-            rectangles[i].heightProperty().setValue(Math.abs(magnitudes[i]) * 10);
+            rectangles[i].yProperty().setValue(Math.abs(magnitudes[i]) * 10);
         }
-
-        /*StringBuilder mag = new StringBuilder("[");
-        StringBuilder pha = new StringBuilder("[");
-        for(int i = 0; i < 24; i++) {
-            mag.append(magnitudes[i]).append(", ");
-            pha.append(phases[i]).append(", ");
-        }
-        System.out.println(mag + "]");
-        System.out.println();
-        System.out.println(pha + "]");
-        System.out.println();
-        System.out.println();*/
     }
 
     /**
@@ -132,16 +119,15 @@ public class SongPlayer implements InvalidationListener {
     }
 
     /**
-     * Set the freqModel
+     * Set the pane and generate rectangles
      */
-    public void setFreqModel(SimpleDoubleProperty freqModel) {
-        this.freqModel = freqModel;
-    }
-
-    public void setPane(Pane pane) {
-        this.pane = pane;
+    public void drawOnPane(Pane pane) {
         for(int i = 0; i < BANDS; i += 1) {
-            rectangles[i] = new Rectangle(i*((pane.getPrefWidth() / BANDS)), 0, (pane.getPrefWidth() / BANDS), pane.getPrefHeight());
+            rectangles[i] = new Rectangle(i*((pane.getPrefWidth() / BANDS + 0.3)), pane.getPrefHeight(),
+                    (pane.getPrefWidth() / BANDS) - 0.3, pane.getPrefHeight());
+
+            rectangles[i].setFill(Color.rgb(((i * 255) / BANDS - 255) * -1, 0, 255));
+
             pane.getChildren().add(rectangles[i]);
         }
     }
