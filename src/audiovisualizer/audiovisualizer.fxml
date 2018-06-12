@@ -35,6 +35,6 @@
                <Insets left="10.0" />
            </padding>
        </HBox>
-       <Pane fx:id="pane" prefHeight="600.0" prefWidth="400" />
+       <Pane fx:id="pane" prefHeight="600.0" prefWidth="1280" />
    </children>
 </VBox>

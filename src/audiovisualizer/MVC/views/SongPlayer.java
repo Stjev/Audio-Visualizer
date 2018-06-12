@@ -4,63 +4,35 @@
 package audiovisualizer.MVC.views;
 
 import audiovisualizer.MVC.models.SongModel;
-import be.tarsos.dsp.*;
-import be.tarsos.dsp.io.jvm.AudioDispatcherFactory;
-import be.tarsos.dsp.io.jvm.AudioPlayer;
-import be.tarsos.dsp.pitch.PitchDetectionHandler;
-import be.tarsos.dsp.pitch.PitchDetectionResult;
-import be.tarsos.dsp.pitch.PitchProcessor;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.scene.control.Alert;
+import javafx.scene.layout.Pane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.shape.Rectangle;
 
-import javax.sound.sampled.*;
 import java.io.File;
-import java.io.IOException;
 
-public class SongPlayer implements InvalidationListener, PitchDetectionHandler {
+public class SongPlayer implements InvalidationListener {
+
+    private final static int BANDS = 128;
     private File song;
 
     private SimpleBooleanProperty playing;
     private SongModel songModel;
     private SimpleDoubleProperty freqModel;
 
-    public void setPlaying(SimpleBooleanProperty playing) {
-        this.playing = playing;
-        this.playing.addListener(this);
-    }
+    private MediaPlayer player;
+    private Boolean songLoaded = false;
+    private Pane pane;
+    private Rectangle[] rectangles = new Rectangle[BANDS];
 
-    public void setSongModel(SongModel songModel) {
-        this.songModel = songModel;
-        this.songModel.addListener(this);
-    }
-
-    public void setFreqModel(SimpleDoubleProperty freqModel) {
-        this.freqModel = freqModel;
-    }
-
-    @Override
-    public void invalidated(Observable observable) {
-        if(songModel.getSong() != null && ! songModel.getSong().equals(song)) {
-            // The song changed
-            song = songModel.getSong();
-        } else {
-            playSong();
-        }
-    }
-
-    private AudioFormat format;
-    private GainProcessor gainProcessor;
-    private AudioPlayer audioPlayer;
-    private AudioDispatcher dispatcher;
-    private WaveformSimilarityBasedOverlapAdd wsola;
-
-    private double pauzedAt;
-
+    /**
+     * Checks if a song is selected and plays that song
+     */
     private void playSong() {
         // Check if a song is selected
         if(song == null && playing.get()) {
@@ -72,53 +44,105 @@ public class SongPlayer implements InvalidationListener, PitchDetectionHandler {
             return;
         }
 
-        load();
         play();
     }
 
-    private void load() {
-        AudioFileFormat fileFormat;
-        try {
-            fileFormat = AudioSystem.getAudioFileFormat(song);
-        } catch (UnsupportedAudioFileException | IOException e) {
-            throw new Error(e);
+    /**
+     * Plays a song
+     */
+    private void play() {
+        // Check if the song is loaded yet.
+        if(! songLoaded) {
+            // Get the file to play
+            Media media = new Media(song.toURI().toString());
+            player = new MediaPlayer(media);
+
+            songLoaded = true;
+
+            player.setAudioSpectrumInterval(0.001);
+            player.setAudioSpectrumNumBands(BANDS);
+            player.setAudioSpectrumListener(this::spectrumListener);
         }
-        format = fileFormat.getFormat();
-        pauzedAt = 0;
+
+        // Play the song
+        player.play();
     }
 
-    private void play(){
-        try {
-            play(pauzedAt);
-        } catch (LineUnavailableException | UnsupportedAudioFileException | IOException e) {
-            e.printStackTrace();
+    /**
+     * Pauses the song
+     */
+    private void pauzeSong(){
+        player.pause();
+    }
+
+    private void spectrumListener(double timestamp,
+                                  double duration,
+                                  float[] magnitudes,
+                                  float[] phases) {
+
+        for(int i = 0; i < BANDS; i += 1) {
+            rectangles[i].heightProperty().setValue(Math.abs(magnitudes[i]) * 10);
         }
+
+        /*StringBuilder mag = new StringBuilder("[");
+        StringBuilder pha = new StringBuilder("[");
+        for(int i = 0; i < 24; i++) {
+            mag.append(magnitudes[i]).append(", ");
+            pha.append(phases[i]).append(", ");
+        }
+        System.out.println(mag + "]");
+        System.out.println();
+        System.out.println(pha + "]");
+        System.out.println();
+        System.out.println();*/
     }
 
-    private void play(double startTime) throws LineUnavailableException, IOException, UnsupportedAudioFileException {
-        gainProcessor = new GainProcessor(1.0);
-
-        wsola = new WaveformSimilarityBasedOverlapAdd(WaveformSimilarityBasedOverlapAdd.Parameters.slowdownDefaults(1.0, format.getSampleRate()));
-
-        dispatcher = AudioDispatcherFactory.fromFile(song, wsola.getInputBufferSize(), wsola.getOverlap());
-
-        wsola.setDispatcher(dispatcher);
-        dispatcher.skip(startTime);
-
-        dispatcher.addAudioProcessor(wsola);
-        dispatcher.addAudioProcessor(gainProcessor);
-        dispatcher.addAudioProcessor(new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.YIN, format.getSampleRate(), 1024, this));
-
-        new Thread(dispatcher,"Audio Player Thread").start();
-        Media sound = new Media(new File("C:\\Users\\Stef Desktop\\Music\\ADD feat. Emilia Ali (Cudos Remix).mp3").toURI().toString());
-        MediaPlayer mediaPlayer = new MediaPlayer(sound);
-        mediaPlayer.play();
-    }
-
+    /**
+     * Invalidated method for listening to the models
+     */
     @Override
-    public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
-        if(pitchDetectionResult.getPitch() != -1){
-            freqModel.setValue(pitchDetectionResult.getPitch() - 23000);
+    public void invalidated(Observable observable) {
+        if(songModel.getSong() != null && ! songModel.getSong().equals(song)) {
+            // The song changed
+            song = songModel.getSong();
+            songLoaded = false;
+        } else {
+            if(this.playing.get()) {
+                playSong();
+            } else {
+                pauzeSong();
+            }
+        }
+    }
+
+    /**
+     * Set the model for isPlaying
+     */
+    public void setPlaying(SimpleBooleanProperty playing) {
+        this.playing = playing;
+        this.playing.addListener(this);
+    }
+
+    /**
+     * Set the song model
+     */
+    public void setSongModel(SongModel songModel) {
+        this.songModel = songModel;
+        this.songModel.addListener(this);
+    }
+
+    /**
+     * Set the freqModel
+     */
+    public void setFreqModel(SimpleDoubleProperty freqModel) {
+        this.freqModel = freqModel;
+    }
+
+    public void setPane(Pane pane) {
+        this.pane = pane;
+        for(int i = 0; i < BANDS; i += 1) {
+            rectangles[i] = new Rectangle(i*((pane.getPrefWidth() / BANDS)), 0, (pane.getPrefWidth() / BANDS), pane.getPrefHeight());
+            pane.getChildren().add(rectangles[i]);
         }
     }
 }

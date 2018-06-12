@@ -40,13 +40,14 @@ public class AVCompanion {
         player.setPlaying(playing);
         player.setSongModel(songModel);
         player.setFreqModel(freqModel);
+        player.setPane(pane);
 
-        // Generates a rectangle
+        /*// Generates a rectangle
         Rectangle visualBlock = new Rectangle(140, 0, 120, 10);
         visualBlock.heightProperty().bind(freqModel);
 
         // Adds the rectangle to the pane
-        pane.getChildren().add(visualBlock);
+        pane.getChildren().add(visualBlock);*/
 
         btnPlay.setPlayingProperty(playing);
         btnFile.setSongModel(songModel);
