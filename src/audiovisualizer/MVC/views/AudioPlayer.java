@@ -19,7 +19,6 @@ import java.io.File;
 public class AudioPlayer implements InvalidationListener {
 
     //TODO: Slow down rectangle movement
-    //TODO: Frequency works exponentially, inverse this effect
 
     private final static int BANDS = 512;
     private final static double REFRESH_RATE = 1000; //FPS
@@ -84,6 +83,7 @@ public class AudioPlayer implements InvalidationListener {
                                   float[] magnitudes,
                                   float[] phases) {
 
+        //TODO: implement MATH.LOG
         for(int i = 0; i < CAP; i += 1) {
             rectangles[i].yProperty().setValue(Math.max(0, 600 - Math.abs(60 + magnitudes[i]) * 13));
         }
