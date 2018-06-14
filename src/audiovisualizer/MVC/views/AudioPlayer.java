@@ -3,25 +3,34 @@
  */
 package audiovisualizer.MVC.views;
 
+import audiovisualizer.Band;
+import audiovisualizer.BandTimerTask;
 import audiovisualizer.MVC.models.SongModel;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.CornerRadii;
 import javafx.scene.layout.Pane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Paint;
 import javafx.scene.shape.Rectangle;
 
 import java.io.File;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class AudioPlayer implements InvalidationListener {
 
     //TODO: Slow down rectangle movement
 
-    private final static int BANDS = 512;
-    private final static double REFRESH_RATE = 1000; //FPS
+    private final static int BANDS = 128;
+    private final static double REFRESH_RATE = 10; //FPS
     private final static int FREQUENCY_CAP = 18000;
     private final static int CAP = (FREQUENCY_CAP * BANDS) / 20000;
     private File song;
@@ -31,7 +40,9 @@ public class AudioPlayer implements InvalidationListener {
 
     private MediaPlayer player;
     private Boolean songLoaded = false;
-    private Rectangle[] rectangles = new Rectangle[BANDS];
+    private Band[] bands = new Band[CAP];
+
+    private Timer timer;
 
     /**
      * Checks if a song is selected and plays that song
@@ -48,6 +59,9 @@ public class AudioPlayer implements InvalidationListener {
         }
 
         play();
+
+        timer = new Timer();
+        timer.scheduleAtFixedRate(new BandTimerTask(bands), 0, 20);
     }
 
     /**
@@ -61,7 +75,6 @@ public class AudioPlayer implements InvalidationListener {
             player = new MediaPlayer(media);
 
             songLoaded = true;
-
             player.setAudioSpectrumInterval(1.0 / REFRESH_RATE);
             player.setAudioSpectrumNumBands(BANDS);
             player.setAudioSpectrumListener(this::spectrumListener);
@@ -76,16 +89,19 @@ public class AudioPlayer implements InvalidationListener {
      */
     private void pauzeSong(){
         player.pause();
+        timer.cancel();
     }
 
     private void spectrumListener(double timestamp,
                                   double duration,
                                   float[] magnitudes,
                                   float[] phases) {
-
-        //TODO: implement MATH.LOG
         for(int i = 0; i < CAP; i += 1) {
-            rectangles[i].yProperty().setValue(Math.max(0, 600 - Math.abs(60 + magnitudes[i]) * 13));
+            /*if(magnitudes[i] > -60) {
+                bands[i].setBandHeight(600 - Math.log(60 + magnitudes[i]) * 50);
+            }*/
+
+            bands[i].setBandHeight(Math.max(0, 600 - Math.abs(60 + magnitudes[i]) * 13));
         }
     }
 
@@ -123,19 +139,20 @@ public class AudioPlayer implements InvalidationListener {
         this.songModel.addListener(this);
     }
 
-    Rectangle temp;
+    private Pane pane;
 
     /**
-     * Set the pane and generate rectangles
+     * Set the pane and generate bands
      */
     public void drawOnPane(Pane pane) {
+        this.pane = pane;
         for(int i = 0; i < CAP; i += 1) {
-            rectangles[i] = new Rectangle(i*((pane.getPrefWidth() / CAP)), pane.getPrefHeight(),
+            bands[i] = new Band(i*((pane.getPrefWidth() / CAP)), pane.getPrefHeight(),
                     (pane.getPrefWidth() / CAP) - 0.1, pane.getPrefHeight());
 
-            rectangles[i].setFill(Color.rgb(((i * 255) / CAP - 255) * -1, 0, 255));
+            bands[i].setFill(Color.rgb(((i * 255) / CAP - 255) * -1, 0, 255));
 
-            pane.getChildren().add(rectangles[i]);
+            pane.getChildren().add(bands[i]);
         }
     }
 }
